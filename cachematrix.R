@@ -1,142 +1,105 @@
-##  title: "Cache Matrix Package" V02
+##  title: "Cache Matrix Package" V04
 ##  author: "Robert Hadow"
-##  date: "August 11, 2015"
+##  date: "August 18, 2015"
 ##  output: R code
-
-# The code below allows a user to calculate and use the inverse of a matrix many
-# times in succession. The first time she calls it, R will calculate the inverse
-# matrix.  After that it will pull it from a cache, saving a lot of machine
-# time.
+##
+## ABSTRACT
+##
+# The code below allows a user to calculate the inverse of a matrix. The first 
+# time she calls it, solve() will calculate the inverse matrix.  After that it
+# will pull it from a cache, saving a lot of machine time.
 # 
-# The code is an example of storage of variables in multiple environments in 
-# order to create a mutable state. In the makeCache routine, m is defined and
-# bound within makeCache in the second line.  Another m is described but its
-# binding in the global environment occurs later.  There is also an example
-# of function masking (get).
+# The code is an example of storage of similarly-named objects in multiple 
+# environments.  In the makeCacheMatrix routine, i is defined and bound by an
+# instance of makeCacheMatrix in the second line.  The same object is referenced
+# from within solveCache.  There is also an example of function masking (get).
 # 
-# HOW DOES IT WORK?
-# Each time cacheSolve is called, it creates a new environment. When it 
+# HOW TO USE THESE TWO FUNCTIONS
 # 
-# Test cases and stubs are found in another file.
-# 
-# 
-# 
-# 
+# When you want to invert a matrix, use am <-makeCacheMatrix(m) where m is the
+# matrix you wish to invert. To retrieve the inverse use cacheSolve(am) for the
+# first and subsequent retrievals of the inverse. the first time will be slow,
+# after that, fast.  Examples may be found in the test cases following the code.
 # 
 #
-# Scope and Practical Limitations
-# The PC is practically limited to square matrices of dim 10,000.
-# Each one requires 768 Mb working memory and disk.  A more advanced
-# implementation could store solutions to disk, but that is out of scope
-# for this project. A large (dim = 10,000) matrix requires 20 min calcuation.
-#
-
-
-
-#
-# 
-# set USE CASE
-# 
-#
-# cacheSolve USE CASE
-# Take a square invertible matrix, go to a protected environemnt and look it up
-# in a previously created object.  If it exists in that object, retrieve its
-# inverse from that object and return it.  If it does not exist, use solve(x)
-# to calculate the inverse.  Store the original matrix and its inverse in the 
-# protected object and return the inverse.
-#
-# protectedLibrary USE CASE
-# In a protected environment (not accessible to a user) establish an object or
-# objects that allow for the storage of a countable number of sqaure matrices.
-# Relate each to its inverse. Keep in mind inversion is commutative. To the 
-# extent it is possible, segregate matrices by class (integer, numeric, 
-# imaginary) and by size (square matrices have only one useful dimension)
-#
-# cacheSolveTestStub USE CASE
-# check dimensions of m and mi. If they are not the same, return false
-# check classes of m and mi. If they are not the same, return false.
-# multiply two square matrices, m and mi.  the results must be the identity
-# matrix of the same dimension of m and mi, If it is not, return false.
-# Include as part of code, creations of the matrices required for testing,
-#
-#
-
-
-
-
-
-# HOW ENCAPSULATION IS ACCOMPLISHED
-# makeCacheMatrix() and cacheSolve() are to be available to a user in their own
-# workspace.  Other required functions and all data are to be hidden and
-# inaccessible. This design assumes that "::", ":::", "<<-", and "->>" are not 
-# available to the user.
-# 
-
-
-
-# makeCacheMatrix PSEUDOCODE
-#  makeCacheMatrix is a function 
-# If a matrix is passed as a formal argument store it locally in x. 
-# If no argument is given, create a matrix of 0 dimension. Store locally in x.
-# Matrix x is available to calling function in x.
-# Create four child functions, set, get, setinverse, and getinverse
-# Return list of child functions. 
-# 
-# 
-#
-# set PSEUDOCODE
-# set operates inside the makeCacheMatrix environemnt
-# it takes one formal argument and writes it in makeCacheMatrix
-# It writes NULL to object x in 
-# 
-# get PSEUDOCODE
-# get is a mask for the {base} function. It retrieves and returns the value of
-# x (the matrix to be inverted) from where it was stored in makeCacheMatrix.
-# 
-# 
-# 
-# 
 # cacheSolve PSEUDOCODE
-# This function uses four functions defined in makeCacheMatrix. It reads and
-# writes a value for m in makeCacheMatrix using the super assignment operator
-# <<- becasue that is where the functions were defined. It is imporant to note
-# that these m objects differ because each time cachSolve is called is a new
-# instance and a new envoronment. 
+# Go to the protected environment associated with the command list returned by 
+# makeCacheMatrix in which a square invertible matrix was created, and look it
+# up. If the inverse exists, retrieve it and return it.  If it does not exist,
+# use solve() to calculate the inverse.  Store the inverse in the protected 
+# environment and return the inverse.
+#
+# This function uses three functions defined in makeCacheMatrix.  It reads
+# values for the original matrix and its inverse in the environment created by
+# makeCacheMatrix and writes values using the super assignment operator <<-
+# because that is where the functions were defined. It is important to note that
+# these objects differ because each time makeCacheMatrix is called a new
+# instance and a new environment is created.
+# 
+#
+# makeCacheMatrix PSEUDOCODE 
+# makeCacheMatrixMatrix is a function.  If a matrix is passed as a formal
+# argument store it locally in x. If no argument is given, create a matrix of 0 
+# rows. Store locally in x.  Matrix x is available to a calling function as
+# x diferentiated by environment. Create three child functions, get, setInverse,
+# and getInverse. Return list of child functions, along with implied environment
+# pointer.
+# 
+# Each time makeCacheMatrix is called, it creates a new environment. The return
+# object from makeCacheMatrix refers only to this environment.  When the return
+# from makeCacheMatrix is used as an argument to cacheSolve, the objects
+# produced are stored only in the environment associated with the return object,
+# (the argument to solveCache). In this way, R keeps separate every calculation
+# of the inverse of a matrix.
 # 
 # 
-
-## Write a short comment describing this function
-
-## CODE
-## 
-makeCacheMatrix <- function(x = matrix(data=numeric()))  {
-        # environment(0x00000000146ec240)
-        m <- NULL
-        set <- function()  {
-                x <<- x
-                m <<- NULL
-        }
-        get <- function() x
-        setmean <- function(mean) m <<- mean
-        getmean <- function() m
-        list(set = set, get = get,
-             setmean = setmean,
-             getmean = getmean)
+# SCOPE AND PRACTICAL LIMITATIONS
+# The PC is practically limited to square matrices of 10,000 rows. Each one of
+# that size requires 768 Mb working memory and disk.  A more advanced 
+# implementation could store solutions to disk, but that is out of scope for
+# this project. A large (nrows == 10,000) matrix requires 20 min calculation.
+#
+#
+## CODE #
+makeCacheMatrix <- function(x = matrix(data=numeric()))  { 
+        # tell function to expect a matrix x, if none received, make one 0x0
+        i <- NULL
+        get <- function() x  # function to retrieve original matrix
+        setInverse <- function(solve) i <<- solve  
+        # function to calculate inverse and write to proper environment
+        getInverse <- function() i   # function to retrieve inverse from cache
+        list(get = get, setInverse = setInverse, getInverse = getInverse)
+        # deliver list of functions as return (with environment id)
 }
 
-
-
-cacheSolve <- function(x , ...) {
-        message("x ", x)
-        m <- x$getmean()
-        if(!is.null(m)) {
-                message("getting_cached_data")
-                return(m)
+cacheSolve <- function(x , ...) { # expect a list of functions and environment
+        i <- x$getInverse()  # retrieve inverse object from environment
+        if(!is.null(i)) {  # if it's valid, return it
+                message("getting cached data")
+                return(i)
         }
         message("calculating fresh")
-        data <- x$get()
-        m <- mean(data, ...)
-        x$setmean(m)
-        m
+        data <- x$get()  # otherwise retrieve the cached matrix
+        i <- solve(data, ...)  # calculate inverse
+        x$setInverse(i)   # store it in the environment
+        i  # and return it
 }
 
+## TEST CASES
+
+c2    <- matrix(c(1+1i, 2-2i, 3+1i, -4+4i), nrow=2)
+n     <- 100  # n is dimension of a matrix  
+set.seed(104729)
+n10   <- matrix(rnorm(n^2, 0, 60), nrow=n) 
+i2    <- matrix(c(6L, 0L, 6L, -1L), nrow=2)
+
+ac2   <- makeCacheMatrix(c2)
+an10  <- makeCacheMatrix(n10)
+ic2   <- cacheSolve(ac2)
+ic2   <- cacheSolve(ac2)
+ai2   <- makeCacheMatrix(i2)
+ii2   <- cacheSolve(ai2)
+ii2   <- cacheSolve(ai2)
+in10  <- cacheSolve(an10)
+str(cacheSolve(an10))
+all.equal((n10 %*% in10), diag( , n, n))   # verify matrix x inverse is I
