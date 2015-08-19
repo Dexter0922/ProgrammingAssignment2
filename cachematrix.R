@@ -63,7 +63,7 @@
 ## CODE #
 makeCacheMatrix <- function(x = matrix(data=numeric()))  { 
         # tell function to expect a matrix x, if none received, make one 0x0
-        i <- NULL
+        i <- NULL # make a placeholder object for inverse
         get <- function() x  # function to retrieve original matrix
         setInverse <- function(solve) i <<- solve  
         # function to calculate inverse and write to proper environment
