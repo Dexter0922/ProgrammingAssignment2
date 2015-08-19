@@ -88,7 +88,7 @@ cacheSolve <- function(x , ...) { # expect a list of functions and environment
 ## TEST CASES
 
 c2    <- matrix(c(1+1i, 2-2i, 3+1i, -4+4i), nrow=2)
-n     <- 100  # n is dimension of a matrix  
+n     <- 10000  # n is dimension of a matrix  
 set.seed(104729)
 n10   <- matrix(rnorm(n^2, 0, 60), nrow=n) 
 i2    <- matrix(c(6L, 0L, 6L, -1L), nrow=2)
