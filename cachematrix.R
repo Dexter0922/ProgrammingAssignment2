@@ -61,45 +61,38 @@
 #
 #
 ## CODE #
-makeCacheMatrix <- function(x = matrix(data=numeric()))  { 
-        # tell function to expect a matrix x, if none received, make one 0x0
-        i <- NULL # make a placeholder object for inverse
-        get <- function() x  # function to retrieve original matrix
-        setInverse <- function(solve) i <<- solve  
-        # function to calculate inverse and write to proper environment
-        getInverse <- function() i   # function to retrieve inverse from cache
-        list(get = get, setInverse = setInverse, getInverse = getInverse)
-        # deliver list of functions as return (with environment id)
+## Create a special "matrix" object that caches its inverse
+makeCacheMatrix <- function(x = numeric()) {
+  ## initialize m
+  m <- NULL 
+  ## set value of the vector
+  set <- function(y) {
+    x <<- y
+    m <<- NULL
+  }
+  ## get value of the vector
+  get <- function() x
+  ## set value of the mean
+  setmean <- function(solve) m <<- solve 
+  ## get value of the mean
+  getmean <- function() m
+  ## create a list object which "holds" all the functions
+  list(set = set, get = get,
+       setmean = setmean,
+       getmean = getmean)
 }
 
-cacheSolve <- function(x , ...) { # expect a list of functions and environment
-        i <- x$getInverse()  # retrieve inverse object from environment
-        if(!is.null(i)) {  # if it's valid, return it
-                message("getting cached data")
-                return(i)
-        }
-        message("calculating fresh")
-        data <- x$get()  # otherwise retrieve the cached matrix
-        i <- solve(data, ...)  # calculate inverse
-        x$setInverse(i)   # store it in the environment
-        i  # and return it
+## cacheSolve: compute the inverse of the special "matrix" returned by makeCacheMatrix
+cachemean <- function(x, ...) {
+  m <- x$getmean()
+  ## if the inverse of a square matrix has been calculated, use cached value
+  if(!is.null(m)) {
+    message("getting cached data")
+    return(m)
+  }
+  ## calculate cached value
+  data <- x$get()
+  m <- solve(data, ...)
+  x$setmean(m)
+  m
 }
-
-## TEST CASES
-
-c2    <- matrix(c(1+1i, 2-2i, 3+1i, -4+4i), nrow=2)
-n     <- 10000  # n is dimension of a matrix  
-set.seed(104729)
-n10   <- matrix(rnorm(n^2, 0, 60), nrow=n) 
-i2    <- matrix(c(6L, 0L, 6L, -1L), nrow=2)
-
-ac2   <- makeCacheMatrix(c2)
-an10  <- makeCacheMatrix(n10)
-ic2   <- cacheSolve(ac2)
-ic2   <- cacheSolve(ac2)
-ai2   <- makeCacheMatrix(i2)
-ii2   <- cacheSolve(ai2)
-ii2   <- cacheSolve(ai2)
-in10  <- cacheSolve(an10)
-str(cacheSolve(an10))
-all.equal((n10 %*% in10), diag( , n, n))   # verify matrix x inverse is I
